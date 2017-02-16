@@ -1,9 +1,10 @@
 from collections import OrderedDict
 import csv
-import datetime,time
+import datetime, time
+import operator
+
 
 class DataFrame(object):
-
     @classmethod
     def from_csv(cls, file_path, delimiting_character=',', quote_character='"'):
         with open(file_path, 'rU') as infile:
@@ -23,18 +24,30 @@ class DataFrame(object):
             self.header = ['column' + str(index + 1) for index, column in enumerate(list_of_lists[0])]
             self.data = list_of_lists
 
-
-
         ############# HW2 task 1 #############
         if len(self.header) != len(set(self.header)):
             raise Exception('There are duplicates!!!')
         ############# end task 1 #############
 
         ############# HW2 task 2 #############
-        self.data=[[s.strip() for s in row] for row in self.data]
+        self.data = [[s.strip() for s in row] for row in self.data]
+
         ############# end task 2 #############
 
-        self.data = [OrderedDict(zip(self.header, row)) for row in self.data]
+        def data_clean(self):
+
+            for i in range(len(self)):
+                for j in range(len(self[0])):
+                    try:
+                        self[i][j] = float(self[i][j].replace(',', ''))
+                    except ValueError:
+                        try:
+                            self[i][j] = datetime.datetime.strptime(self[i][j], '%m/%d/%y %H:%M')
+                        except:
+                            pass
+            return self
+
+        self.data = [OrderedDict(zip(self.header, row)) for row in data_clean(self.data)]
 
     def __getitem__(self, item):
         # this is for rows only
@@ -56,8 +69,10 @@ class DataFrame(object):
 
                 if isinstance(item[1], list):
                     if all([isinstance(thing, int) for thing in item[1]]):
-                        return [[column_value for index, column_value in enumerate([value for value in row.itervalues()]) if index in item[1]] for row in rowz]
-                    elif all([isinstance(thing,str) for thing in item[1]]):
+                        return [
+                            [column_value for index, column_value in enumerate([value for value in row.itervalues()]) if
+                             index in item[1]] for row in rowz]
+                    elif all([isinstance(thing, str) for thing in item[1]]):
                         return [[row[column_name] for column_name in item[1]] for row in rowz]
                     else:
                         raise TypeError('What the hell is this?')
@@ -67,7 +82,7 @@ class DataFrame(object):
             else:
                 if isinstance(item[1], (int, slice)):
                     return [[value for value in row.itervalues()][item[1]] for row in self.data[item[0]]]
-                elif isinstance(item[1],str):
+                elif isinstance(item[1], str):
                     return [row[item[1]] for row in self.data[item[0]]]
                 else:
                     raise TypeError('I don\'t know how to handle this...')
@@ -78,92 +93,100 @@ class DataFrame(object):
 
     def get_rows_where_column_has_value(self, column_name, value, index_only=False):
         if index_only:
-            return [index for index, row_value in enumerate(self[column_name]) if row_value==value]
+            return [index for index, row_value in enumerate(self[column_name]) if row_value == value]
         else:
-            return [row for row in self.data if row[column_name]==value]
+            return [row for row in self.data if row[column_name] == value]
 
     ############# HW2 task 3 #############
-    
-    def min(self,col_name):
+    def col_type(self, col_name):
         try:
-            nums = [float(row[col_name].replace(',','')) for row in self.data]
+            nums = [float(row[col_name]) for row in self.data]
+            col_type = 'Number'
+            return nums, col_type
+        except ValueError:
+            try:
+                nums = [datetime.datetime.strptime(row[col_name], '%m/%d/%y %H:%M') for row in self.data]
+                nums = [time.mktime(num.timetuple()) for num in nums]
+                col_type = 'Date'
+                return nums, col_type
+            except:
+                nums = ''
+                col_type = 'Str'
+                return nums, col_type
+
+    def min(self, col_name):
+        nums, col_type = self.col_type(col_name)
+        if col_type == 'Number':
             print min(nums)
-        except ValueError:
-            try:
-                nums=[datetime.datetime.strptime(row[col_name], '%m/%d/%y %H:%M') for row in self.data]
-                nums=[time.mktime(num.timetuple()) for num in nums]
-                print time.strftime('%m-%d-%y %H:%M',time.localtime(min(nums)))
-            except:    
-                print ('Cannot be calculated')
+        elif col_type == 'Date':
+            print time.strftime('%m-%d-%y %H:%M', time.localtime(min(nums)))
+        else:
+            print ('Cannot be calculated')
 
-    def max(self,col_name):
-        try:
-            nums = [float(row[col_name].replace(',','')) for row in self.data]
+    def max(self, col_name):
+        nums, col_type = self.col_type(col_name)
+        if col_type == 'Number':
             print max(nums)
-        except ValueError:
-            try:
-                nums=[datetime.datetime.strptime(row[col_name], '%m/%d/%y %H:%M') for row in self.data]
-                nums=[time.mktime(num.timetuple()) for num in nums]
-                print time.strftime('%m-%d-%y %H:%M',time.localtime(max(nums)))
-            except:    
-                print ('Cannot be calculated')
+        elif col_type == 'Date':
+            print time.strftime('%m-%d-%y %H:%M', time.localtime(max(nums)))
+        else:
+            print ('Cannot be calculated')
 
-    def median(self,col_name):
-        try:
-            nums = [float(row[col_name].replace(',','')) for row in self.data]
-            nums = sorted(nums)
-            center = int(len(nums) / 2)
-            if len(nums) % 2 == 0:
+    def median(self, col_name):
+        nums, col_type = self.col_type(col_name)
+        nums = sorted(nums)
+        center = int(len(nums) / 2)
+
+        if len(nums) % 2 == 0:
+            even = 1
+        else:
+            even = 0
+
+        if col_type == 'Number':
+            if even == 0:
                 print sum(nums[center - 1:center + 1]) / 2.0
             else:
                 print nums[center]
-        except ValueError:
-            try:
-                nums=[datetime.datetime.strptime(row[col_name], '%m/%d/%y %H:%M') for row in self.data]
-                nums=[time.mktime(num.timetuple()) for num in nums]
-                nums = sorted(nums)
-                center = int(len(nums) / 2)
-                if len(nums) % 2 == 0:
-                    print time.strftime('%m-%d-%y %H:%M',time.localtime(sum(nums[center - 1:center + 1]) / 2.0))
-                else:
-                    print time.strftime('%m-%d-%y %H:%M',time.localtime(nums[center]))
-            except:
-                print ('Cannot be calculated')
-
-
-    def mean(self,col_name):
-        try:
-            nums = [float(row[col_name].replace(',','')) for row in self.data]
-            count = len(nums)
-            print sum(nums) / count
-        except ValueError:
-            try:
-                nums=[datetime.datetime.strptime(row[col_name], '%m/%d/%y %H:%M') for row in self.data]
-                nums=[time.mktime(num.timetuple()) for num in nums]
-                count = len(nums)
-                print time.strftime('%m-%d-%y %H:%M',time.localtime(sum(nums) / count))                
-            except:
-                print ('Cannot be calculated')
-
-    def sum(self,col_name):
-        try:
-            nums = [float(row[col_name].replace(',','')) for row in self.data]
-            print sum(nums)
-        except ValueError:
+        elif col_type == 'Date':
+            if even == 0:
+                print time.strftime('%m-%d-%y %H:%M', time.localtime(sum(nums[center - 1:center + 1]) / 2.0))
+            else:
+                print time.strftime('%m-%d-%y %H:%M', time.localtime(nums[center]))
+        else:
             print ('Cannot be calculated')
 
-    def std(self,col_name):
-        try:
-            nums = [float(row[col_name].replace(',','')) for row in self.data]
-            mean = sum(nums)/len(nums)
-            print  sum((x-mean)**2/len(nums) for x in nums)**0.5
-        except ValueError:
+    def mean(self, col_name):
+        nums, col_type = self.col_type(col_name)
+        if col_type == 'Number':
+            print sum(nums) / len(nums)
+        elif col_type == 'Date':
+            print time.strftime('%m-%d-%y %H:%M', time.localtime(sum(nums) / len(nums)))
+        else:
+            print ('Cannot be calculated')
+
+    def sum(self, col_name):
+        nums, col_type = self.col_type(col_name)
+        if col_type == 'Number':
+            print sum(nums)
+        elif col_type == 'Date':
+            print ('Date cannot sum.')
+        else:
+            print ('Cannot be calculated')
+
+    def std(self, col_name):
+        nums, col_type = self.col_type(col_name)
+        mean = sum(nums) / len(nums)
+        if col_type == 'Number':
+            print  (sum((x - mean) ** 2 / len(nums) for x in nums)) ** 0.5
+        elif col_type == 'Date':
+            print ('Date do not need std.')
+        else:
             print ('Cannot be calculated')
 
     ############# end task 3 #############
 
     ############# HW2 task 4 #############
-    
+
     def add_rows(self, list_of_lists):
         for new_list in list_of_lists:
             if len(new_list) == len(self.header):
@@ -172,22 +195,23 @@ class DataFrame(object):
                 return self
             else:
                 print ('Wrong number of len')
+
     ############# end task 4 #############
 
     ############# HW2 task 5 #############
-    
-    def add_column(self, list_of_lists,col_name):
+
+    def add_column(self, list_of_lists, col_name):
         # type: (object, object) -> object
         if len(list_of_lists) == len(self.data):
-            self.header=self.header+col_name
-            new_col_dict = [OrderedDict(zip(col_name,row)) for row in list_of_lists]
+            self.header = self.header + col_name
+            new_col_dict = [OrderedDict(zip(col_name, row)) for row in list_of_lists]
             for l in range(len(self.data)):
                 for rowz in self.data:
-                    rowz = self.data[l].update(new_col_dict[l]) 
+                    rowz = self.data[l].update(new_col_dict[l])
             return self
         else:
-            print ("Wrong number of column")
-    ############# end task 5 #############
+            print ('Wrong number of len')
+            ############# end task 5 #############
 
 
 

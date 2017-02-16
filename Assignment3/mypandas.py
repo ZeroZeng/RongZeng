@@ -1,6 +1,7 @@
 from collections import OrderedDict
 import csv
 import datetime,time
+import operator
 
 class DataFrame(object):
 
@@ -33,9 +34,23 @@ class DataFrame(object):
         ############# HW2 task 2 #############
         self.data=[[s.strip() for s in row] for row in self.data]
         ############# end task 2 #############
+        
+        def data_clean(self):
+            
+            for i in range(len(self)):
+                for j in range(len(self[0])):
+                    try:
+                        self[i][j] = float(self[i][j].replace(',',''))
+                    except ValueError:
+                        try:
+                            self[i][j] = datetime.datetime.strptime(self[i][j], '%m/%d/%y %H:%M')
+                        except:
+                            pass
+            return self
+        
+        self.data = [OrderedDict(zip(self.header, row)) for row in data_clean(self.data)]   
 
-        self.data = [OrderedDict(zip(self.header, row)) for row in self.data]
-
+                       
     def __getitem__(self, item):
         # this is for rows only
         if isinstance(item, (int, slice)):
@@ -83,83 +98,92 @@ class DataFrame(object):
             return [row for row in self.data if row[column_name]==value]
 
     ############# HW2 task 3 #############
+    def col_type(self,col_name):
+        try:
+            nums = [float(row[col_name]) for row in self.data]
+            col_type = 'Number'
+            return nums,col_type
+        except ValueError:
+            try:
+                nums=[datetime.datetime.strptime(row[col_name], '%m/%d/%y %H:%M') for row in self.data]
+                nums=[time.mktime(num.timetuple()) for num in nums]
+                col_type = 'Date'
+                return nums,col_type
+            except:
+                nums=''
+                col_type ='Str'
+                return nums,col_type
+   
     
     def min(self,col_name):
-        try:
-            nums = [float(row[col_name].replace(',','')) for row in self.data]
+        nums,col_type = self.col_type(col_name)
+        if col_type == 'Number':
             print min(nums)
-        except ValueError:
-            try:
-                nums=[datetime.datetime.strptime(row[col_name], '%m/%d/%y %H:%M') for row in self.data]
-                nums=[time.mktime(num.timetuple()) for num in nums]
-                print time.strftime('%m-%d-%y %H:%M',time.localtime(min(nums)))
-            except:    
-                print ('Cannot be calculated')
+        elif col_type =='Date':
+            print time.strftime('%m-%d-%y %H:%M',time.localtime(min(nums)))
+        else:
+            print ('Cannot be calculated')
 
     def max(self,col_name):
-        try:
-            nums = [float(row[col_name].replace(',','')) for row in self.data]
+        nums,col_type = self.col_type(col_name)
+        if col_type == 'Number':
             print max(nums)
-        except ValueError:
-            try:
-                nums=[datetime.datetime.strptime(row[col_name], '%m/%d/%y %H:%M') for row in self.data]
-                nums=[time.mktime(num.timetuple()) for num in nums]
-                print time.strftime('%m-%d-%y %H:%M',time.localtime(max(nums)))
-            except:    
-                print ('Cannot be calculated')
+        elif col_type =='Date':
+            print time.strftime('%m-%d-%y %H:%M',time.localtime(max(nums)))
+        else:
+            print ('Cannot be calculated')
 
     def median(self,col_name):
-        try:
-            nums = [float(row[col_name].replace(',','')) for row in self.data]
-            nums = sorted(nums)
-            center = int(len(nums) / 2)
-            if len(nums) % 2 == 0:
+        nums,col_type = self.col_type(col_name)
+        nums = sorted(nums)
+        center = int(len(nums) / 2)
+        
+        if len(nums) % 2 == 0:
+            even = 1
+        else:
+            even = 0
+        
+        if col_type == 'Number':
+            if even==0:
                 print sum(nums[center - 1:center + 1]) / 2.0
             else:
                 print nums[center]
-        except ValueError:
-            try:
-                nums=[datetime.datetime.strptime(row[col_name], '%m/%d/%y %H:%M') for row in self.data]
-                nums=[time.mktime(num.timetuple()) for num in nums]
-                nums = sorted(nums)
-                center = int(len(nums) / 2)
-                if len(nums) % 2 == 0:
-                    print time.strftime('%m-%d-%y %H:%M',time.localtime(sum(nums[center - 1:center + 1]) / 2.0))
-                else:
-                    print time.strftime('%m-%d-%y %H:%M',time.localtime(nums[center]))
-            except:
-                print ('Cannot be calculated')
-
+        elif col_type =='Date':
+            if even==0:
+                print time.strftime('%m-%d-%y %H:%M',time.localtime(sum(nums[center - 1:center + 1]) / 2.0))
+            else:
+                print time.strftime('%m-%d-%y %H:%M',time.localtime(nums[center]))
+        else:
+            print ('Cannot be calculated')
 
     def mean(self,col_name):
-        try:
-            nums = [float(row[col_name].replace(',','')) for row in self.data]
-            count = len(nums)
-            print sum(nums) / count
-        except ValueError:
-            try:
-                nums=[datetime.datetime.strptime(row[col_name], '%m/%d/%y %H:%M') for row in self.data]
-                nums=[time.mktime(num.timetuple()) for num in nums]
-                count = len(nums)
-                print time.strftime('%m-%d-%y %H:%M',time.localtime(sum(nums) / count))                
-            except:
-                print ('Cannot be calculated')
+        nums,col_type = self.col_type(col_name)
+        if col_type == 'Number':
+            print sum(nums) / len(nums)
+        elif col_type =='Date':
+            print time.strftime('%m-%d-%y %H:%M',time.localtime(sum(nums) / len(nums)))                
+        else:
+            print ('Cannot be calculated')
 
     def sum(self,col_name):
-        try:
-            nums = [float(row[col_name].replace(',','')) for row in self.data]
+        nums,col_type = self.col_type(col_name)
+        if col_type == 'Number':
             print sum(nums)
-        except ValueError:
+        elif col_type =='Date':
+            print ('Date cannot sum.')             
+        else:
             print ('Cannot be calculated')
+
 
     def std(self,col_name):
-        try:
-            nums = [float(row[col_name].replace(',','')) for row in self.data]
-            mean = sum(nums)/len(nums)
-            print  sum((x-mean)**2/len(nums) for x in nums)**0.5
-        except ValueError:
+        nums,col_type = self.col_type(col_name)
+        mean = sum(nums)/len(nums)
+        if col_type == 'Number':
+            print  (sum((x-mean)**2/len(nums) for x in nums))**0.5
+        elif col_type =='Date':
+            print ('Date do not need std.')             
+        else:
             print ('Cannot be calculated')
-
     ############# end task 3 #############
 
     ############# HW2 task 4 #############
@@ -186,11 +210,66 @@ class DataFrame(object):
                     rowz = self.data[l].update(new_col_dict[l]) 
             return self
         else:
-            print ("Wrong number of column")
+            print ('Wrong number of len')
     ############# end task 5 #############
 
+    ############# HW3 task 1 #############
+    def sort_by(self, col_name, reverse):
+        if isinstance(col_name,str):
+            self.data = sorted(self.data,key= operator.itemgetter(col_name),reverse=reverse)
+            return self.data
+        elif isinstance(col_name,list):
+            for i in range(len(col_name))[::-1]:
+                self.data = sorted(self.data,key=operator.itemgetter(col_name[i]),reverse=reverse[i])
+            return self.data
+        else:
+            print 'TypeError'
 
+    ############# end task 1 #############
 
+    ############# HW3 task 2 #############
+    
+class Series(list):
+    
+   
+    def __eq__(self, other):
+        ret_list = []
+        for item in self:
+            ret_list.append(item == other)
+        return ret_list
+       
+    def __ne__(self, other):
+        ret_list = []
+        for item in self:
+            ret_list.append(item != other)
+        return ret_list
+    
+    def __lt__(self, other):
+        ret_list = []
+        for item in self:
+            ret_list.append(item < other)
+        return ret_list
+    
+    def __gt__(self, other):
+        ret_list = []
+        for item in self:
+            ret_list.append(item > other)
+        return ret_list  
+    
+    def __le__(self, other):
+        ret_list = []
+        for item in self:
+            ret_list.append(item <= other)
+        return ret_list   
+    
+    def __ge__(self, other):
+        ret_list = []
+        for item in self:
+            ret_list.append(item >= other)
+        return ret_list
+    
+    ############# end task 2 ############# 
+    
 #
 # infile = open('SalesJan2009.csv')
 # lines = infile.readlines()
@@ -239,7 +318,7 @@ class DataFrame(object):
 #
 #
 # df = DataFrame.from_csv('SalesJan2009.csv')
-# # ============test task 3============
+# # ============test HW2 task 3============
 # x='Last_Login'
 # test1 = df.min(x)
 # test2 = df.max(x)
@@ -247,11 +326,16 @@ class DataFrame(object):
 # test4 = df.sum(x)
 # test5 = df.mean(x)
 # test6 = df.std(x)
-# # ============test task 4============
+# # ============test HW2 task 4============
 # new_row = df[1:3]
 # new_rowz = df.add_rows(new_row)
 # print (new_rowz)
-# # ============test task 5============
+# # ============test HW2 task 5============
 # new_col = df[:,:3]
 # add_col = df.add_column(new_col,new_col[0])
 # print (add_col)
+# # ============test HW3 task 1============
+# test1=df.sort_by('Price',True)
+# test1
+# test2=df.sort_by(['Payment_Type','Price'],[True,True])
+# test2

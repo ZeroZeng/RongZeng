@@ -1,4 +1,6 @@
-A,B,C
-1,4,7
-2,5,8
-3,6,9
+Number,Date,Word,Pay,State,Price
+5,7/15/06  12:45,Ace,Visa,NJ,1200
+2,8/15/06  12:45,Aaa,Mastercard,NY,500
+3,6/15/06  12:45,Bbb,Visa,NJ,800
+4,5/15/06  12:45,Bba,Mastercard,DC,3200
+1,10/15/06  12:45,ZZZ,Amazon,NY,2000
