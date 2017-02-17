@@ -1,10 +1,10 @@
 from collections import OrderedDict
 import csv
-import datetime,time
+import datetime, time
 import operator
 
-class DataFrame(object):
 
+class DataFrame(object):
     @classmethod
     def from_csv(cls, file_path, delimiting_character=',', quote_character='"'):
         with open(file_path, 'rU') as infile:
@@ -24,33 +24,31 @@ class DataFrame(object):
             self.header = ['column' + str(index + 1) for index, column in enumerate(list_of_lists[0])]
             self.data = list_of_lists
 
-
-
         ############# HW2 task 1 #############
         if len(self.header) != len(set(self.header)):
             raise Exception('There are duplicates!!!')
         ############# end task 1 #############
 
         ############# HW2 task 2 #############
-        self.data=[[s.strip() for s in row] for row in self.data]
+        self.data = [[s.strip() for s in row] for row in self.data]
+
         ############# end task 2 #############
-        
+
         def data_clean(self):
-            
+
             for i in range(len(self)):
                 for j in range(len(self[0])):
                     try:
-                        self[i][j] = float(self[i][j].replace(',',''))
+                        self[i][j] = float(self[i][j].replace(',', ''))
                     except ValueError:
                         try:
                             self[i][j] = datetime.datetime.strptime(self[i][j], '%m/%d/%y %H:%M')
                         except:
                             pass
             return self
-        
-        self.data = [OrderedDict(zip(self.header, row)) for row in data_clean(self.data)]   
 
-                       
+        self.data = [OrderedDict(zip(self.header, row)) for row in data_clean(self.data)]
+
     def __getitem__(self, item):
         # this is for rows only
         if isinstance(item, (int, slice)):
@@ -58,7 +56,7 @@ class DataFrame(object):
 
         # this is for columns only
         elif isinstance(item, str):
-            return [row[item] for row in self.data]
+            return Series([row[item] for row in self.data])
 
         # this is for rows and columns
         elif isinstance(item, tuple):
@@ -71,8 +69,10 @@ class DataFrame(object):
 
                 if isinstance(item[1], list):
                     if all([isinstance(thing, int) for thing in item[1]]):
-                        return [[column_value for index, column_value in enumerate([value for value in row.itervalues()]) if index in item[1]] for row in rowz]
-                    elif all([isinstance(thing,str) for thing in item[1]]):
+                        return [
+                            [column_value for index, column_value in enumerate([value for value in row.itervalues()]) if
+                             index in item[1]] for row in rowz]
+                    elif all([isinstance(thing, str) for thing in item[1]]):
                         return [[row[column_name] for column_name in item[1]] for row in rowz]
                     else:
                         raise TypeError('What the hell is this?')
@@ -82,112 +82,124 @@ class DataFrame(object):
             else:
                 if isinstance(item[1], (int, slice)):
                     return [[value for value in row.itervalues()][item[1]] for row in self.data[item[0]]]
-                elif isinstance(item[1],str):
+                elif isinstance(item[1], str):
                     return [row[item[1]] for row in self.data[item[0]]]
                 else:
                     raise TypeError('I don\'t know how to handle this...')
 
-        # only for lists of column names
         elif isinstance(item, list):
-            return [[row[column_name] for column_name in item] for row in self.data]
+            if isinstance(item[0], str):
+
+                return [[row[column_name] for column_name in item] for row in self.data]
+                # else:
+                #     print 'col_name is not exist.'
+            elif isinstance(item[0], bool):
+                list_ret = []
+                result = zip(item, self.data)
+                for row in result:
+                    if row[0] == True:
+                        list_ret.append(row[1:])
+                return list_ret
+            else:
+                print 'Error'
 
     def get_rows_where_column_has_value(self, column_name, value, index_only=False):
         if index_only:
-            return [index for index, row_value in enumerate(self[column_name]) if row_value==value]
+            return [index for index, row_value in enumerate(self[column_name]) if row_value == value]
         else:
-            return [row for row in self.data if row[column_name]==value]
+            return [row for row in self.data if row[column_name] == value]
 
     ############# HW2 task 3 #############
-    def col_type(self,col_name):
+    def col_type(self, col_name):
         try:
-            nums = [float(row[col_name]) for row in self.data]
+            test = float(self.data[0][col_name])
+            result = [row[col_name] for row in self.data]
             col_type = 'Number'
-            return nums,col_type
+            return result, col_type
         except ValueError:
             try:
-                nums=[datetime.datetime.strptime(row[col_name], '%m/%d/%y %H:%M') for row in self.data]
-                nums=[time.mktime(num.timetuple()) for num in nums]
+                test = datetime.datetime.strptime(self.data[0][col_name], '%m/%d/%y %H:%M')
+                result = [time.mktime(x.timetuple()) for x in row[col_name] for row in self.data]
                 col_type = 'Date'
-                return nums,col_type
+                return result, col_type
             except:
-                nums=''
-                col_type ='Str'
-                return nums,col_type
-   
-    
-    def min(self,col_name):
-        nums,col_type = self.col_type(col_name)
+                result = [row[col_name] for row in self.data]
+                col_type = 'Str'
+                return result, col_type
+
+    def min(self, col_name):
+        result, col_type = self.col_type(col_name)
         if col_type == 'Number':
-            print min(nums)
-        elif col_type =='Date':
-            print time.strftime('%m-%d-%y %H:%M',time.localtime(min(nums)))
+            print min(result)
+        elif col_type == 'Date':
+            print time.strftime('%m-%d-%y %H:%M', time.localtime(min(result)))
         else:
             print ('Cannot be calculated')
 
-    def max(self,col_name):
-        nums,col_type = self.col_type(col_name)
+    def max(self, col_name):
+        result, col_type = self.col_type(col_name)
         if col_type == 'Number':
-            print max(nums)
-        elif col_type =='Date':
-            print time.strftime('%m-%d-%y %H:%M',time.localtime(max(nums)))
+            print max(result)
+        elif col_type == 'Date':
+            print time.strftime('%m-%d-%y %H:%M', time.localtime(max(result)))
         else:
             print ('Cannot be calculated')
 
-    def median(self,col_name):
-        nums,col_type = self.col_type(col_name)
-        nums = sorted(nums)
-        center = int(len(nums) / 2)
-        
-        if len(nums) % 2 == 0:
+    def median(self, col_name):
+        result, col_type = self.col_type(col_name)
+        nums = sorted(result)
+        center = int(len(result) / 2)
+
+        if len(result) % 2 == 0:
             even = 1
         else:
             even = 0
-        
+
         if col_type == 'Number':
-            if even==0:
-                print sum(nums[center - 1:center + 1]) / 2.0
+            if even == 0:
+                print sum(result[center - 1:center + 1]) / 2.0
             else:
-                print nums[center]
-        elif col_type =='Date':
-            if even==0:
-                print time.strftime('%m-%d-%y %H:%M',time.localtime(sum(nums[center - 1:center + 1]) / 2.0))
+                print result[center]
+        elif col_type == 'Date':
+            if even == 0:
+                print time.strftime('%m-%d-%y %H:%M', time.localtime(sum(result[center - 1:center + 1]) / 2.0))
             else:
-                print time.strftime('%m-%d-%y %H:%M',time.localtime(nums[center]))
+                print time.strftime('%m-%d-%y %H:%M', time.localtime(result[center]))
         else:
             print ('Cannot be calculated')
 
-    def mean(self,col_name):
-        nums,col_type = self.col_type(col_name)
+    def mean(self, col_name):
+        result, col_type = self.col_type(col_name)
         if col_type == 'Number':
-            print sum(nums) / len(nums)
-        elif col_type =='Date':
-            print time.strftime('%m-%d-%y %H:%M',time.localtime(sum(nums) / len(nums)))                
+            print sum(result) / len(result)
+        elif col_type == 'Date':
+            print time.strftime('%m-%d-%y %H:%M', time.localtime(sum(result) / len(result)))
         else:
             print ('Cannot be calculated')
 
-    def sum(self,col_name):
-        nums,col_type = self.col_type(col_name)
+    def sum(self, col_name):
+        result, col_type = self.col_type(col_name)
         if col_type == 'Number':
-            print sum(nums)
-        elif col_type =='Date':
-            print ('Date cannot sum.')             
+            print sum(result)
+        elif col_type == 'Date':
+            print ('Date cannot sum.')
         else:
             print ('Cannot be calculated')
 
-
-    def std(self,col_name):
-        nums,col_type = self.col_type(col_name)
-        mean = sum(nums)/len(nums)
+    def std(self, col_name):
+        result, col_type = self.col_type(col_name)
+        mean = sum(result) / len(result)
         if col_type == 'Number':
-            print  (sum((x-mean)**2/len(nums) for x in nums))**0.5
-        elif col_type =='Date':
-            print ('Date do not need std.')             
+            print  (sum((x - mean) ** 2 / len(result) for x in result)) ** 0.5
+        elif col_type == 'Date':
+            print ('Date do not need std.')
         else:
             print ('Cannot be calculated')
+
     ############# end task 3 #############
 
     ############# HW2 task 4 #############
-    
+
     def add_rows(self, list_of_lists):
         for new_list in list_of_lists:
             if len(new_list) == len(self.header):
@@ -196,80 +208,116 @@ class DataFrame(object):
                 return self
             else:
                 print ('Wrong number of len')
+
     ############# end task 4 #############
 
     ############# HW2 task 5 #############
-    
-    def add_column(self, list_of_lists,col_name):
+
+    def add_column(self, list_of_lists, col_name):
         # type: (object, object) -> object
         if len(list_of_lists) == len(self.data):
-            self.header=self.header+col_name
-            new_col_dict = [OrderedDict(zip(col_name,row)) for row in list_of_lists]
+            self.header = self.header + col_name
+            new_col_dict = [OrderedDict(zip(col_name, row)) for row in list_of_lists]
             for l in range(len(self.data)):
                 for rowz in self.data:
-                    rowz = self.data[l].update(new_col_dict[l]) 
+                    rowz = self.data[l].update(new_col_dict[l])
             return self
         else:
             print ('Wrong number of len')
+
     ############# end task 5 #############
 
     ############# HW3 task 1 #############
     def sort_by(self, col_name, reverse):
-        if isinstance(col_name,str):
-            self.data = sorted(self.data,key= operator.itemgetter(col_name),reverse=reverse)
+        if isinstance(col_name, str):
+            self.data = sorted(self.data, key=operator.itemgetter(col_name), reverse=reverse)
             return self.data
-        elif isinstance(col_name,list):
-            for i in range(len(col_name))[::-1]:
-                self.data = sorted(self.data,key=operator.itemgetter(col_name[i]),reverse=reverse[i])
-            return self.data
+        elif isinstance(col_name, list):
+            if isinstance(reverse, bool):
+                for i in range(len(col_name))[::-1]:
+                    self.data = sorted(self.data, key=operator.itemgetter(col_name[i]), reverse=reverse)
+                return self.data
+            elif isinstance(reverse, list):
+                for i in range(len(col_name))[::-1]:
+                    self.data = sorted(self.data, key=operator.itemgetter(col_name[i]), reverse=reverse[i])
+                return self.data
+            else:
+                print 'Number of parameter is wrong!'
         else:
             print 'TypeError'
 
     ############# end task 1 #############
 
+    ############# HW3 task 3 #############
+
+
+    def group_by(self, group, agg, func):
+        if isinstance(group, str) & isinstance(agg, str):
+            raw_data=self[[group,agg]]
+            group_data=[]
+            result=[]
+            group_data.append(row[0] for row in raw_data)
+            group_data = set(group_data)
+            for key in group_data:
+                group_value = []
+                for row in raw_data:
+                    if key == row[0]:
+                        group_value.append(row[1])
+                result_value=func(group_value)
+                result.append(dict(key,result_value))
+            return result
+
+
+def avg(list_of_values):
+    return sum(list_of_values) / float(len(list_of_values))
+    ############# end task 3 #############
+
     ############# HW3 task 2 #############
-    
+
+
 class Series(list):
-    
-   
+    def __init__(self, list_of_values):
+        self.data = list_of_values
+
     def __eq__(self, other):
         ret_list = []
-        for item in self:
+        for item in self.data:
             ret_list.append(item == other)
         return ret_list
-       
+
     def __ne__(self, other):
         ret_list = []
-        for item in self:
+        for item in self.data:
             ret_list.append(item != other)
         return ret_list
-    
+
     def __lt__(self, other):
         ret_list = []
-        for item in self:
+        for item in self.data:
             ret_list.append(item < other)
         return ret_list
-    
+
     def __gt__(self, other):
         ret_list = []
-        for item in self:
+        for item in self.data:
             ret_list.append(item > other)
-        return ret_list  
-    
+        return ret_list
+
     def __le__(self, other):
         ret_list = []
-        for item in self:
+        for item in self.data:
             ret_list.append(item <= other)
-        return ret_list   
-    
+        return ret_list
+
     def __ge__(self, other):
         ret_list = []
-        for item in self:
+        for item in self.data:
             ret_list.append(item >= other)
         return ret_list
-    
-    ############# end task 2 ############# 
-    
+
+    ############# end task 2 #############
+
+
 #
 # infile = open('SalesJan2009.csv')
 # lines = infile.readlines()
@@ -317,7 +365,7 @@ class Series(list):
 #
 #
 #
-# df = DataFrame.from_csv('SalesJan2009.csv')
+df = DataFrame.from_csv('SalesJan2009.csv')
 # # ============test HW2 task 3============
 # x='Last_Login'
 # test1 = df.min(x)
@@ -339,3 +387,6 @@ class Series(list):
 # test1
 # test2=df.sort_by(['Payment_Type','Price'],[True,True])
 # test2
+test3 = df[df['Price'] > 1400]
+test4=df.group_by('Product','Price',avg)
+2 + 2
