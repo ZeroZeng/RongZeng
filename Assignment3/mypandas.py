@@ -261,7 +261,8 @@ class DataFrame(object):
                 result[i]=avg(j)
             return result
         elif isinstance(group,list):
-            a=group.append(agg)
+            a=group
+            a.append(agg)
             raw_data=self[a]
             d = defaultdict(list)
             name = []
