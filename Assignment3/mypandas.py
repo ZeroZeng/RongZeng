@@ -2,7 +2,7 @@ from collections import OrderedDict
 import csv
 import datetime, time
 import operator
-
+from collections import defaultdict
 
 class DataFrame(object):
     @classmethod
@@ -36,8 +36,8 @@ class DataFrame(object):
 
         def data_clean(self):
 
-            for i in range(len(self)):
-                for j in range(len(self[0])):
+            for j in range(len(self[0])):
+                for i in range(len(self)):
                     try:
                         self[i][j] = float(self[i][j].replace(',', ''))
                     except ValueError:
@@ -250,26 +250,42 @@ class DataFrame(object):
 
     ############# HW3 task 3 #############
 
-
     def group_by(self, group, agg, func):
         if isinstance(group, str) & isinstance(agg, str):
             raw_data=self[[group,agg]]
-            group_data=[]
-            result=[]
-            group_data.append(row[0] for row in raw_data)
-            group_data = set(group_data)
-            for key in group_data:
-                group_value = []
-                for row in raw_data:
-                    if key == row[0]:
-                        group_value.append(row[1])
-                result_value=func(group_value)
-                result.append(dict(key,result_value))
+            d = defaultdict(list)
+            for key,value in raw_data:
+                d[key].append(value)
+            result=OrderedDict(d.items())
+            for i,j in result.items():
+                result[i]=avg(j)
             return result
+        elif isinstance(group,list):
+            a=group.append(agg)
+            raw_data=self[a]
+            d = defaultdict(list)
+            name = []
+            value = []
+            for row in raw_data:
+                for i in range(1, len(row) - 1):
+                    x = row[0] + ':' + row[i]
+                name.append(x)
+                value.append(row[-1])
+            new_data = zip(name, value)
+            for k, v, in new_data:
+                d[k].append(v)
+            result = OrderedDict(d.items())
+            for i,j in result.items():
+                result[i]=avg(j)
+            return result
+        else:
+            print 'Error'
+
 
 
 def avg(list_of_values):
     return sum(list_of_values) / float(len(list_of_values))
+
     ############# end task 3 #############
 
     ############# HW3 task 2 #############
@@ -389,4 +405,5 @@ df = DataFrame.from_csv('SalesJan2009.csv')
 # test2
 test3 = df[df['Price'] > 1400]
 test4=df.group_by('Product','Price',avg)
+test5=df.group_by(['Product','Payment_Type'],'Price',avg)
 2 + 2
