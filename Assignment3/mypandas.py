@@ -404,7 +404,7 @@ df = DataFrame.from_csv('SalesJan2009.csv')
 # test1
 # test2=df.sort_by(['Payment_Type','Price'],[True,True])
 # test2
-test3 = df[df['Price'] > 1400]
-test4=df.group_by('Product','Price',avg)
-test5=df.group_by(['Product','Payment_Type'],'Price',avg)
-2 + 2
+# test3 = df[df['Price'] > 1400]
+# test4=df.group_by('Product','Price',avg)
+# test5=df.group_by(['Product','Payment_Type'],'Price',avg)
+# 2 + 2
