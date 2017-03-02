@@ -3,6 +3,8 @@ import json
 import requests
 
 from flask import Flask, request, Response
+import mechanize
+import cookielib
 
 
 application = Flask(__name__)
@@ -39,11 +41,47 @@ def inbound():
             response['text'] = 'Blue!'
             print 'Response text set correctly'
 
-        if text == "<BOTS_RESPOND>":
+        if "<BOTS_RESPOND>" in text:
         # you can use print statments to debug your code
-            print 'Bot is responding to favorite color question'
+            print 'Bot is responding question'
             response['text'] = 'Hello, my name is rong_bot. I belong to rong. I live at 54.201.254.197.'
             print 'Response text set correctly'
+
+        if '<I_NEED_HELP_WITH CODING>:' in text:
+            # Browser
+            br = mechanize.Browser()
+
+            # Cookie Jar
+            cj = cookielib.LWPCookieJar()
+            br.set_cookiejar(cj)
+
+            # Browser options
+            br.set_handle_equiv(True)
+            br.set_handle_gzip(True)
+            br.set_handle_redirect(True)
+            br.set_handle_referer(True)
+            br.set_handle_robots(False)
+
+            # Follows refresh 0 but not hangs on refresh > 0
+            br.set_handle_refresh(mechanize._http.HTTPRefreshProcessor(), max_time=1)
+
+            # Want debugging messages?
+            # br.set_debug_http(True)
+            # br.set_debug_redirects(True)
+            # br.set_debug_responses(True)
+
+            # User-Agent (this is cheating, ok?)
+            br.addheaders = [('User-agent',
+                              'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2214.85 Safari/537.36')]
+
+            q = text.split(':', 1)[1]
+            q=q.split(' ')
+            res = q[0]
+            for i in range(1, len(q) - 1, 1):
+                res = res + '+' + q[i]
+            res='http://stackoverflow.com/search?q='+res
+            r = br.open(res)
+            html = r.read()
 
         if slack_inbound_url and response['text']:
             r = requests.post(slack_inbound_url, json=response)
