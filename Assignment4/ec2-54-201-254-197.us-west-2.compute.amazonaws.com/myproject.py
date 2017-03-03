@@ -31,7 +31,7 @@ def inbound():
     inbound_message = username + " in " + channel + " says: " + text
     print '\n\nMessage:\n' + inbound_message
 
-    if username in [my_slack_username, 'rong']:
+    if username in [my_slack_username, 'zac.wentzell']:
         # Your code for the assignment must stay within this if statement
 
         # A sample response:
@@ -48,40 +48,20 @@ def inbound():
             print 'Response text set correctly'
 
         if '<I_NEED_HELP_WITH CODING>:' in text:
-            # Browser
-            br = mechanize.Browser()
 
-            # Cookie Jar
-            cj = cookielib.LWPCookieJar()
-            br.set_cookiejar(cj)
+            a = text.split(':', 1)[1]
+            b = a.split('[')
+            q = b[0]
 
-            # Browser options
-            br.set_handle_equiv(True)
-            br.set_handle_gzip(True)
-            br.set_handle_redirect(True)
-            br.set_handle_referer(True)
-            br.set_handle_robots(False)
+            if len(b) > 1:
+                tag = b[1][:-1]
+                for i in range(2, len(b)):
+                    tag = tag + ';' + b[i][:-1]
+            else:
+                pass
 
-            # Follows refresh 0 but not hangs on refresh > 0
-            br.set_handle_refresh(mechanize._http.HTTPRefreshProcessor(), max_time=1)
+            http='https://api.stackexchange.com/2.2/search/advanced?order=desc&sort=activity&q='+q+'&tagged='+tag+'&site=stackoverflow'
 
-            # Want debugging messages?
-            # br.set_debug_http(True)
-            # br.set_debug_redirects(True)
-            # br.set_debug_responses(True)
-
-            # User-Agent (this is cheating, ok?)
-            br.addheaders = [('User-agent',
-                              'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2214.85 Safari/537.36')]
-
-            q = text.split(':', 1)[1]
-            q=q.split(' ')
-            res = q[0]
-            for i in range(1, len(q) - 1, 1):
-                res = res + '+' + q[i]
-            res='http://stackoverflow.com/search?q='+res
-            r = br.open(res)
-            html = r.read()
 
         if slack_inbound_url and response['text']:
             r = requests.post(slack_inbound_url, json=response)
