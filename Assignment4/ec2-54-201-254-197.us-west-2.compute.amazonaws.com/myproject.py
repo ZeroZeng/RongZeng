@@ -1,3 +1,4 @@
+# coding=utf-8
 import os
 import json
 import requests
@@ -13,8 +14,8 @@ my_bot_name = 'rong_bot' #e.g. zac_bot
 my_slack_username = 'rong' #e.g. zac.wentzell
 
 
-slack_inbound_url = 'https://hooks.slack.com/services/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'
-# slack_inbound_url = 'https://hooks.slack.com/services/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'
+# slack_inbound_url = 'https://hooks.slack.com/services/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'
+slack_inbound_url = 'https://hooks.slack.com/services/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'
 
 
 # this handles POST requests sent to your server at SERVERIP:41953/slack
@@ -91,7 +92,7 @@ def inbound():
             cur = res3['currently']
             today = res3['daily']['data'][0]
             tomo = res3['daily']['data'][1]
-            cur_temperature= 'Temperature: {0} F'.format(cur['temperature'])
+            cur_temperature= 'Temperature: {0} °F'.format(cur['temperature'])
             cur_summary=str(cur['summary'])
             cur_humidity= 'Humidity {0} %'.format(cur['humidity'] * 100)
             cur_pressure=str(cur['pressure'])+' hPa'
@@ -99,9 +100,9 @@ def inbound():
             cur_precipIntensity= 'PrecipIntensity {0} in'.format(cur['precipIntensity'])
             cur_precipProbability= 'PrecipProbability {0} %'.format(cur['precipProbability'] * 100)
             cur_time= str(cur['time'])
-            today_temperature = 'High {0}|Low {1} F'.format(today['temperatureMax'], today['temperatureMin'])
+            today_temperature = 'High {0}|Low {1} °F'.format(today['temperatureMax'], today['temperatureMin'])
             tomo_summary = str(tomo['summary'])
-            tomo_temperature = 'High {0}|Low {1} F'.format(tomo['temperatureMax'], tomo['temperatureMin'])
+            tomo_temperature = 'High {0}|Low {1} °F'.format(tomo['temperatureMax'], tomo['temperatureMin'])
             tomo_precipIntensity = 'Precip Intensity {0} in'.format(tomo['precipIntensity'])
             tomo_precipProbability = 'Precip Probability {0} %'.format(tomo['precipProbability'] * 100)
             tomo_humidity = 'Humidity {0} %'.format(tomo['humidity'] * 100)
