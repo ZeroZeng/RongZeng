@@ -3,8 +3,7 @@ import json
 import requests
 
 from flask import Flask, request, Response
-import mechanize
-import cookielib
+import time
 
 
 application = Flask(__name__)
@@ -21,7 +20,7 @@ slack_inbound_url = 'https://hooks.slack.com/services/T4AKCH42W/B4AMD95K6/kpS1Ay
 @application.route('/slack', methods=['POST'])
 def inbound():
     print '========POST REQUEST @ /slack========='
-    response = {'username': my_bot_name, 'icon_emoji': ':robot_face:', 'text': ''}
+    response = {'username': my_bot_name, 'icon_emoji': ':robot_face:', 'text': '', 'attachments': ''}
     print 'FORM DATA RECEIVED IS:'
     print request.form
 
@@ -41,15 +40,15 @@ def inbound():
             response['text'] = 'Blue!'
             print 'Response text set correctly'
 
-        if "<BOTS_RESPOND>" in text:
+        if 'BOTS_RESPOND' in text:
         # you can use print statments to debug your code
             print 'Bot is responding question'
             response['text'] = 'Hello, my name is rong_bot. I belong to rong. I live at 54.201.254.197.'
             print 'Response text set correctly'
 
-        if '<I_NEED_HELP_WITH CODING>:' in text:
-
-            a = text.split(':', 1)[1]
+        if 'I_NEED_HELP_WITH_CODING' in text:
+            a = text
+            a = a.split(':', 1)[1].strip()
             b = a.split('[')
             q = b[0]
 
@@ -57,10 +56,111 @@ def inbound():
                 tag = b[1][:-1]
                 for i in range(2, len(b)):
                     tag = tag + ';' + b[i][:-1]
+                http = 'https://api.stackexchange.com/2.2/search/advanced?order=desc&sort=activity&q=' + q + '&tagged=' + tag + '&site=stackoverflow'
             else:
-                pass
+                http = 'https://api.stackexchange.com/2.2/search/advanced?order=desc&sort=activity&q=' + q + '&site=stackoverflow'
 
-            http='https://api.stackexchange.com/2.2/search/advanced?order=desc&sort=activity&q='+q+'&tagged='+tag+'&site=stackoverflow'
+
+            res0 = requests.get(http)
+            time.sleep(0.01)
+            res1 = res0.json()
+            res = res1['items'][:5]
+            data = [(row['link'], row['title'], row['answer_count'],time.strftime('%m-%d-%Y', time.localtime(row['creation_date']))) for row in res]
+            for i in range(len(data)):
+                text = text + '\n'+str(i+1)+'. <' + str(data[i][0]) + '|' + str(data[i][1]) + '> (' + str(data[i][2]) + ' responses), ' + str(
+                    data[i][3])
+            time.sleep(0.01)
+            response['text'] = text
+            print 'Response text set correctly'
+
+        if 'WHAT\'S_THE_WEATHER_LIKE_AT' in text:
+            a = text
+            a = a.split(':', 1)[1].strip()
+            b = a.replace(' ','+')
+            http='https://maps.googleapis.com/maps/api/geocode/json?address='+b+'&key=AIzaSyArrI7ZRhK-6hfP1TIo1WlnaJt7BuLmGyQ'
+            res0 = requests.get(http)
+            time.sleep(0.1)
+            res1 = res0.json()
+            lat = res1['results'][0]['geometry']['location']['lat']
+            lng = res1['results'][0]['geometry']['location']['lng']
+            http1 = 'https://api.darksky.net/forecast/4e7dd16acefa920fc8580be10c0a02df/{0},{1}'.format(lat,lng)
+            res2 = requests.get(http1)
+            time.sleep(0.1)
+            res3 = res2.json()
+            cur = res3['currently']
+            today = res3['daily']['data'][0]
+            tomo = res3['daily']['data'][1]
+            cur_temperature= 'Temperature: {0} F'.format(cur['temperature'])
+            cur_summary=str(cur['summary'])
+            cur_humidity= 'Humidity {0} %'.format(cur['humidity'] * 100)
+            cur_pressure=str(cur['pressure'])+' hPa'
+            cur_windSpeed=str(cur['windSpeed'])+' mph'
+            cur_precipIntensity= 'PrecipIntensity {0} in'.format(cur['precipIntensity'])
+            cur_precipProbability= 'PrecipProbability {0} %'.format(cur['precipProbability'] * 100)
+            cur_time= str(cur['time'])
+            today_temperature = 'High {0}|Low {1} F'.format(today['temperatureMax'], today['temperatureMin'])
+            tomo_summary = str(tomo['summary'])
+            tomo_temperature = 'High {0}|Low {1} F'.format(tomo['temperatureMax'], tomo['temperatureMin'])
+            tomo_precipIntensity = 'Precip Intensity {0} in'.format(tomo['precipIntensity'])
+            tomo_precipProbability = 'Precip Probability {0} %'.format(tomo['precipProbability'] * 100)
+            tomo_humidity = 'Humidity {0} %'.format(tomo['humidity'] * 100)
+            value1 = '{0}\n{1}\n{2}\n{3}\n{4}'.format(cur_summary, cur_temperature, today_temperature,cur_humidity, cur_precipProbability)
+            value2 = '{0}\n{1}\n{2}\n{3}'.format(tomo_summary, tomo_temperature, tomo_humidity,tomo_precipProbability)
+
+            if 'snow' in cur_summary or 'Snow' in cur_summary:
+                image_url='http://img.sc115.com/uploads2/sc/png/4311/307.png'
+            elif 'rain' in cur_summary or 'Rain' in cur_summary:
+                image_url='http://img.sc115.com/uploads2/sc/png/4311/311.png'
+            elif 'drizzle' in cur_summary or 'Drizzle' in cur_summary:
+                image_url='http://img.sc115.com/uploads2/sc/png/4311/314.png'
+            elif 'foggy' in cur_summary or 'Foggy' in cur_summary:
+                image_url='http://img.sc115.com/uploads2/sc/png/4311/309.png'
+            elif 'Overcast' in cur_summary or 'overcast' in cur_summary:
+                image_url = 'http://img.sc115.com/uploads2/sc/png/4311/310.png'
+            elif 'cloudy' in cur_summary or 'Cloudy' in cur_summary:
+                image_url = 'http://img.sc115.com/uploads2/sc/png/4311/319.png'
+            elif 'clear' in cur_summary or 'Clear' in cur_summary:
+                image_url = 'http://img.sc115.com/uploads2/sc/png/4311/322.png'
+            else:
+                image_url = "http://cn.technode.com/files/2015/03/C1304067039357.jpg"
+
+            true='true'
+            false='false'
+
+            text1=[
+                {
+                    "fallback": "Required plain-text summary of the attachment.",
+                    "color": "#36a64f",
+                    "pretext": "",
+                    "author_name": "",
+                    "author_link": "",
+                    "author_icon": "",
+                    "title": "Weather Forecast",
+                    "title_link": "",
+                    "text": "",
+                    "fields": [
+                        {
+                            "title": "Today",
+                            "value": value1,
+                            "short": true
+                        },
+                        {
+                            "title": "Tomorrow",
+                            "value": value2,
+                            "short": true
+                        }
+                    ],
+                    "image_url": image_url,
+                    "thumb_url": "",
+                    "footer": "Dark Sky",
+                    "ts": cur_time
+                }
+            ]
+
+            response['text']= text
+            response['attachments'] = text1
+
+            print 'Response text set correctly'
 
 
         if slack_inbound_url and response['text']:
