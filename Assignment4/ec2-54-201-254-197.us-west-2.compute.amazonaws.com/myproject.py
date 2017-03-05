@@ -22,7 +22,7 @@ slack_inbound_url = 'https://hooks.slack.com/services/T3S93LZK6/B3Y34B94M/fExqXz
 # this handles POST requests sent to your server at SERVERIP:41953/slack
 @application.route('/slack', methods=['POST'])
 def inbound():
-    delay = random.uniform(0, 10)
+    delay = random.uniform(0, 20)
     time.sleep(delay)
     print '========POST REQUEST @ /slack========='
     response = {'username': my_bot_name, 'icon_emoji': ':robot_face:', 'text': '', 'attachments': ''}
